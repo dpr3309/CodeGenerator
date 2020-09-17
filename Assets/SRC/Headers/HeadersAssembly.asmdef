@@ -1,0 +1,15 @@
+{
+    "name": "HeadersAssembly",
+    "references": [
+        "GUID:c1c94514922a7f84a8036f0dd516553b",
+        "GUID:77f314247c49f294baa59e51c14e89c9"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": []
+}
