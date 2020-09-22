@@ -5,7 +5,7 @@ using UnityEngine;
 namespace MapCatalog
 {
     [Model]
-    // [Handler(typeof(IMapCatalogModel), typeof(IMapMessageMsg), typeof(IMapCmd))]
+    [Handler(typeof(IMapCatalogModel), typeof(IMapMessageMsg), typeof(IMapCmd))]
     public interface IMapCatalogModel
     {
         void NotStarted();
@@ -16,7 +16,7 @@ namespace MapCatalog
     }
 
 
-    // [Msg]
+    [Msg]
     public interface IMapMessageMsg
     {
         void StartInit(Vector2 tratata, int abc);
