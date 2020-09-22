@@ -59,3 +59,9 @@ public class AssemblyCodeGenSourceAttribute : Attribute
     }
 }
 
+[AttributeUsage(AttributeTargets.Assembly)]
+public class ModelAssemblyAttribute : Attribute
+{
+    
+}
+

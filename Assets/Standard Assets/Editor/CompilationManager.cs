@@ -81,6 +81,12 @@ public class CompilationManager
 
     private static bool inProcess;
 
+    
+    /// <summary>
+    /// нужен как воздух!
+    /// если его не приписывать к имени каждой новой генерируемой промежуточной сборке - настанет беда!
+    /// каждый раз будет загружаться последня успешно скомпилированная промежуточная сборка, и актуальные изменения из сборки хедеров не подтянуться!
+    /// </summary>
     private static int index
     {
         get => PlayerPrefs.GetInt("LastAssemblyIndex", 0);
@@ -124,9 +130,13 @@ public class CompilationManager
         
         string sourcesDir = Path.GetDirectoryName(attr.sourceFilePath);
 
+        // тут ОБЯЗАТЕЛЬНО должен инкрементироваться индекс с каждой сборкой!
+        // иначе при генерации подтянется последняя удачно скомпилированная сборка, без актуальных иземенний
         index += 1;
         
         //собираю сборку из сорцов
+        //тут ОБЯЗАТЕЛЬНО передавать индекс, который инкрементируется с каждой сборкой!
+        // иначе подтянется последняя удачно скомпилированная сборка, без актуальных иземенний
         Helper.BuildAssemblyFromSources(sourcesDir, index);
         
         AppDomain.Unload(domain);
@@ -154,13 +164,15 @@ public class CompilationManager
         var fps = ass.FirstOrDefault(i => i.GetName().Name.Contains("Editor-firstpass"));
         var ucm = ass.FirstOrDefault(i => i.GetName().Name == "UnityEngine.CoreModule");
         
-        var headerAss = ass.FirstOrDefault(i => i.GetName().Name == "HeaderAssembly");
-         var modelAss = ass.FirstOrDefault(i => i.GetName().Name == "ModelAssembly");
+        var headerAss = ass.FirstOrDefault(i =>
+            i.GetCustomAttributes(typeof(AssemblyCodeGenSourceAttribute), true).Length > 0);
+        var modelAss = ass.FirstOrDefault(i => i.GetCustomAttributes(typeof(ModelAssemblyAttribute), true).Length > 0);
 
         
         var domain = AppDomain.CreateDomain("reflection domain", new Evidence());
         
-        
+        // тут ОБЯЗАТЕЛЬНО передавать индекс!
+        // иначе подтянется последняя удачно скомпилированная сборка, без актуальных иземенний
         var targetSourcesAssembly_bytes = File.ReadAllBytes($"Temp/MyAssembly/HeaderAssembly_{index}.dll");
         var fps_bytes = File.ReadAllBytes(fps.Location);
         var headerAss_bytes = File.ReadAllBytes(headerAss.Location);
