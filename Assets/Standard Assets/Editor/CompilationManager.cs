@@ -96,7 +96,7 @@ public class CompilationManager
         if(inProcess)
             return;
 
-        Debug.LogError("-=Start generation=-");
+        Debug.Log("[CompilationManager.GenerateOne] -=Start generation=-");
         inProcess = true;
 
         if (string.IsNullOrEmpty(path))
@@ -130,7 +130,7 @@ public class CompilationManager
         Helper.BuildAssemblyFromSources(sourcesDir, index);
         
         AppDomain.Unload(domain);
-        Debug.LogWarning("-=End generation=-");
+        Debug.Log("[CompilationManager.GenerateOne] -=End generation=-");
         
         inProcess = false;
         
@@ -144,7 +144,7 @@ public class CompilationManager
         if(inProcess)
             return;
 
-        Debug.LogError("-=Start generation=-");
+        Debug.Log("[CompilationManager.RegenerateCompleteDll] -=Start generation=-");
         inProcess = true;
 
         var currentDomain = AppDomain.CurrentDomain;
@@ -194,7 +194,7 @@ public class CompilationManager
         }
         
         inProcess = false;
-        Debug.LogWarning("-=End generation=-");
+        Debug.Log("[CompilationManager.RegenerateCompleteDll]-=End generation=-");
     }
 }
 

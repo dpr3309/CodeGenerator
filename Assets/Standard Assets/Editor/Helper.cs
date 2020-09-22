@@ -35,16 +35,16 @@ public class Helper
     public static Assembly BuildAssemblyFromSources(string sourcesPath, int index)
     {
         var files = Directory.GetFiles(sourcesPath,"*.cs", SearchOption.AllDirectories);
-        foreach (var file in files)
-        {
-            Debug.Log(file);
-        }
+        // foreach (var file in files)
+        // {
+        //     Debug.Log(file);
+        // }
         return BuildAssembly(true, $"Temp/MyAssembly/HeaderAssembly_{index}.dll",$"Temp/HeaderAssembly_{index}.dll", files.Select(i => new FileInfo(i)).ToArray());
     }
 
     static Assembly BuildAssembly(bool wait, string assPath = "" , string assPP = "", params FileInfo[] files)
     {
-        Debug.Log("BA: " + files.Length);
+        //Debug.Log("BA: " + files.Length);
         //var scripts = new[] { "Temp/MyAssembly/MyScript1.cs", "Temp/MyAssembly/MyScript2.cs" };
         List<string> scripts = new List<string>();
         var outputAssembly = (!string.IsNullOrEmpty(assPath))?assPath:"Temp/MyAssembly/MyAssembly.dll";
@@ -58,8 +58,6 @@ public class Helper
             var scriptName = Path.GetFileNameWithoutExtension(fileInfo.Name);
             string path = $"Temp/MyAssembly/{scriptName}.cs";
             var content = File.ReadAllText(fileInfo.FullName);
-            Debug.Log("write text in file:" + path);
-            Debug.Log("text:" + content);
             File.WriteAllText(path, content);
             scripts.Add(path);
         }
