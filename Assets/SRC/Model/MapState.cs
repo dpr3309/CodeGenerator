@@ -59,3 +59,20 @@ public class AssemblySourcesPathAttribute : Attribute
     }
 }
 
+[AttributeUsage(AttributeTargets.Assembly)]
+public class AssemblyCodeGenSourceAttribute : Attribute
+{
+    public readonly string path;
+    public readonly string sourceFilePath;
+
+    public AssemblyCodeGenSourceAttribute(
+        string path,
+        [System.Runtime.CompilerServices.CallerFilePath]
+        string sourceFilePath = ""
+    )
+    {
+        this.path = path;
+        this.sourceFilePath = sourceFilePath;
+    }
+}
+

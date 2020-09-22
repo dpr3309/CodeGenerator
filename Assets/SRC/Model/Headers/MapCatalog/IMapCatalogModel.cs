@@ -1,34 +1,37 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using SRC.Model;
 using UnityEngine;
-namespace HomeIsland
+
+namespace MapCatalog
 {
     [Model]
-    [Handler(typeof(IHomeIslandModel), typeof(IHomeIslandMsg), typeof(IHomeIslamdCmd))]
-    public interface IHomeIslandModel
+    // [Handler(typeof(IMapCatalogModel), typeof(IMapMessageMsg), typeof(IMapCmd))]
+    public interface IMapCatalogModel
     {
         void NotStarted();
-    }
-    
-    
-    [Msg]
-    public interface IHomeIslandMsg
-    {
-        void StartInit();
+        void Started();
+        void NotNormal();
         
+        void NotNormal2342();
+    }
+
+
+    // [Msg]
+    public interface IMapMessageMsg
+    {
+        void StartInit(Vector2 tratata, int abc);
+
         void LoadedLocalSave(MapState localSave);
-    
+
         void CompletedMinigame(MinigameType game);
         void CompletedCasual(CasualgameType game);
-    
-        void StartedNextIteration(IterationConfig ctx);
+
+        void StartedNextIteration(IterationConfig ctx, int tratata, double orolo);
     }
-    
-    
-    
+
+
     [Cmd]
-    public interface IHomeIslamdCmd
+    public interface IMapCmd
     {
         void showWinScreen();
         void collectCoin(MinigameType island);
@@ -38,4 +41,3 @@ namespace HomeIsland
         void launchCasual(CasualgameType game);
     }
 }
-
