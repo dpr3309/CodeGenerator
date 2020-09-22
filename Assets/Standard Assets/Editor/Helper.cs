@@ -9,12 +9,12 @@ using Assembly = System.Reflection.Assembly;
 
 public class Helper 
 {
-    [MenuItem("AssemblyBuilder Example/Build Assembly Async")]
-    public static void BuildAssemblyAsync()
-    {
-        var files = GetFiles();
-        BuildAssembly(false, files:files);
-    }
+    // [MenuItem("AssemblyBuilder Example/Build Assembly Async")]
+    // public static void BuildAssemblyAsync()
+    // {
+    //     var files = GetFiles();
+    //     BuildAssembly(false, files:files);
+    // }
 
     [MenuItem("AssemblyBuilder Example/Build Assembly Sync")]
     public static void BuildAssemblySync()

@@ -113,7 +113,6 @@ public class CompilationManager
         if (attrCheck == null)
             return;
         
-        Debug.Log($"generating from {path}");
         var domain = AppDomain.CreateDomain("reflection domain1234", new Evidence());
         var file = System.IO.File.ReadAllBytes(path);
         var ass = domain.Load(file);
@@ -124,19 +123,12 @@ public class CompilationManager
         if (attr == null)
             return;
         
-        Debug.Log(path);
-        
-        Debug.Log(attr.sourceFilePath);
         string sourcesDir = Path.GetDirectoryName(attr.sourceFilePath);
-        Debug.Log("ЗАПУСТИТЬ генерацию длл-ки из файлов в подкаталогах!!!!: " + sourcesDir);
 
         index += 1;
-        Debug.LogError("Index = " + index);
-
-
-        var tempAssembly = Helper.BuildAssemblyFromSources(sourcesDir, index);
         
-        var specialDirPath = attr.path.Replace('/', Path.DirectorySeparatorChar);
+        //собираю сборку из сорцов
+        Helper.BuildAssemblyFromSources(sourcesDir, index);
         
         
         
@@ -192,8 +184,9 @@ public class CompilationManager
         var ass = currentDomain.GetAssemblies();
 
         var fps = ass.FirstOrDefault(i => i.GetName().Name.Contains("Editor-firstpass"));
-        var headerAss = ass.FirstOrDefault(i => i.GetName().Name == "HeaderAssembly");
         var ucm = ass.FirstOrDefault(i => i.GetName().Name == "UnityEngine.CoreModule");
+        
+        var headerAss = ass.FirstOrDefault(i => i.GetName().Name == "HeaderAssembly");
         var modelAss = ass.FirstOrDefault(i => i.GetName().Name == "ModelAssembly");
         var path = fps.Location;
         
@@ -201,7 +194,6 @@ public class CompilationManager
         
         var domain = AppDomain.CreateDomain("reflection domain", new Evidence());
         var file2 = System.IO.File.ReadAllBytes($"Temp/MyAssembly/HeaderAssembly_{index}.dll");
-        Debug.LogError("fuck fuck fuck!!!!!");
         var tempAssembly = domain.Load(file2);
 
         var fps_bytes = File.ReadAllBytes(path);
@@ -209,36 +201,19 @@ public class CompilationManager
         var ucm_bytes = File.ReadAllBytes(ucm.Location);
         var modelAss_bytes = File.ReadAllBytes(modelAss.Location);
         
-        var ass_2 = domain.GetAssemblies();
         domain.Load(fps_bytes);
-        ass_2 = domain.GetAssemblies();
-        
         domain.Load(headerAss_bytes);
-        ass_2 = domain.GetAssemblies();
         domain.Load(ucm_bytes);
-
         domain.Load(modelAss_bytes);
-        
-        Debug.Log(domain.FriendlyName);
-        
-        Assembly[] assemblies = domain.GetAssemblies();
-        foreach (Assembly asm in assemblies)
-            Debug.Log(asm.GetName().Name+" : " + asm.Location);
-        
-        //var tempAssembly = Assembly.LoadFile("Temp/MyAssembly/HeaderAssembly.dll");
-        
-        //var specialDirPath = attr.path.Replace('/', Path.DirectorySeparatorChar);
-        
-        //Debug.Log("=-=-=-=-=-=-= " + specialDirPath);
-        
-        Debug.LogWarning("-------------------------------------"+tempAssembly.Location);
 
-        string specialDirPath = "Temp/MVU/";
+
         //LextGeneratorMainManager.Generate(tempAssembly, $"{specialDirPath}");
         var lextGener = domain.CreateInstance(fps.GetName().Name, typeof(LextGeneratorMainManager).FullName);
         LextGeneratorMainManager unwrapLextGener = lextGener.Unwrap() as LextGeneratorMainManager;
         try
         {
+            string specialDirPath = unwrapLextGener.GenerateSpecialDirPath(tempAssembly);
+
             unwrapLextGener.TryGenerate(tempAssembly, $"{specialDirPath}");
         }
         catch (Exception e)

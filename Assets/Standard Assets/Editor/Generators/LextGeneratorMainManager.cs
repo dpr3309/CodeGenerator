@@ -534,5 +534,20 @@ public void TryGenerate(Assembly monitoredAssembly, string pathToTargetAssembly)
              return result;
          }
          #endregion
+
+         public string GenerateSpecialDirPath(Assembly tempAssembly)
+         {
+            var  attr = tempAssembly.GetCustomAttributes(typeof(AssemblyCodeGenSourceAttribute), false)
+                 .Cast<AssemblyCodeGenSourceAttribute>().FirstOrDefault();
+        
+             if (attr == null)
+                 return string.Empty;
+             
+             Debug.Log(attr.sourceFilePath);
+
+             var specialDirPath = attr.path.Replace('/', Path.DirectorySeparatorChar);
+
+             return specialDirPath;
+         }
     }
 }
