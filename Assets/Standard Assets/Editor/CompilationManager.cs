@@ -105,7 +105,6 @@ public class CompilationManager
             return;
         }
 
-
         var assCheck = Assembly.LoadFile(path);
         var attrCheck = assCheck.GetCustomAttributes(typeof(AssemblyCodeGenSourceAttribute), false)
             .Cast<AssemblyCodeGenSourceAttribute>().FirstOrDefault();  
@@ -130,54 +129,23 @@ public class CompilationManager
         //собираю сборку из сорцов
         Helper.BuildAssemblyFromSources(sourcesDir, index);
         
-        
-        
-        //LextGeneratorMainManager.Generate(tempAssembly, $"{specialDirPath}");
-        inProcess = false;
         AppDomain.Unload(domain);
         Debug.LogWarning("-=End generation=-");
         
+        inProcess = false;
+        
+        // второй этап генерации
+        RegenerateCompleteDll();
     }
     
-    [UnityEditor.MenuItem("GENERATOR/RegenerateCompleteDll")]
-    public static void RegenerateCompleteDll()
+    //[UnityEditor.MenuItem("GENERATOR/RegenerateCompleteDll")]
+    private static void RegenerateCompleteDll()
     {
         if(inProcess)
             return;
 
         Debug.LogError("-=Start generation=-");
         inProcess = true;
-
-        // if (string.IsNullOrEmpty(path))
-        // {
-        //     inProcess = false;
-        //     return;
-        // }
-        //
-        //
-        // var assCheck = Assembly.LoadFile(path);
-        // var attrCheck = assCheck.GetCustomAttributes(typeof(AssemblyCodeGenSourceAttribute), false)
-        //     .Cast<AssemblyCodeGenSourceAttribute>().FirstOrDefault();  
-        //
-        // if (attrCheck == null)
-        //     return;
-        //
-        // Debug.Log($"generating from {path}");
-        //
-        // //var file = System.IO.File.ReadAllBytes(path);
-        // var ass = Assembly.LoadFile(path);
-        //
-        // var attr = ass.GetCustomAttributes(typeof(AssemblyCodeGenSourceAttribute), false)
-        //     .Cast<AssemblyCodeGenSourceAttribute>().FirstOrDefault();
-        //
-        // if (attr == null)
-        //     return;
-        //
-        // Debug.Log(path);
-        //
-        // Debug.Log(attr.sourceFilePath);
-        // string sourcesDir = Path.GetDirectoryName(attr.sourceFilePath);
-        // Debug.Log("ЗАПУСТИТЬ генерацию длл-ки из кацлов в подкаталогах!!!!: " + sourcesDir);
 
         var currentDomain = AppDomain.CurrentDomain;
 
@@ -187,20 +155,19 @@ public class CompilationManager
         var ucm = ass.FirstOrDefault(i => i.GetName().Name == "UnityEngine.CoreModule");
         
         var headerAss = ass.FirstOrDefault(i => i.GetName().Name == "HeaderAssembly");
-        var modelAss = ass.FirstOrDefault(i => i.GetName().Name == "ModelAssembly");
-        var path = fps.Location;
-        
-        Debug.Log("=-=-=-=-= curdom name = " + currentDomain.FriendlyName);
+         var modelAss = ass.FirstOrDefault(i => i.GetName().Name == "ModelAssembly");
+
         
         var domain = AppDomain.CreateDomain("reflection domain", new Evidence());
-        var file2 = System.IO.File.ReadAllBytes($"Temp/MyAssembly/HeaderAssembly_{index}.dll");
-        var tempAssembly = domain.Load(file2);
-
-        var fps_bytes = File.ReadAllBytes(path);
+        
+        
+        var targetSourcesAssembly_bytes = File.ReadAllBytes($"Temp/MyAssembly/HeaderAssembly_{index}.dll");
+        var fps_bytes = File.ReadAllBytes(fps.Location);
         var headerAss_bytes = File.ReadAllBytes(headerAss.Location);
         var ucm_bytes = File.ReadAllBytes(ucm.Location);
         var modelAss_bytes = File.ReadAllBytes(modelAss.Location);
         
+        var tempAssembly = domain.Load(targetSourcesAssembly_bytes);
         domain.Load(fps_bytes);
         domain.Load(headerAss_bytes);
         domain.Load(ucm_bytes);
@@ -215,6 +182,9 @@ public class CompilationManager
             string specialDirPath = unwrapLextGener.GenerateSpecialDirPath(tempAssembly);
 
             unwrapLextGener.TryGenerate(tempAssembly, $"{specialDirPath}");
+            
+            AppDomain.Unload(domain);
+            Helper.BuildAssemblySync();
         }
         catch (Exception e)
         {
@@ -224,7 +194,6 @@ public class CompilationManager
         }
         
         inProcess = false;
-        AppDomain.Unload(domain);
         Debug.LogWarning("-=End generation=-");
     }
 }

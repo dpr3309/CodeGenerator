@@ -16,7 +16,7 @@ public class Helper
     //     BuildAssembly(false, files:files);
     // }
 
-    [MenuItem("AssemblyBuilder Example/Build Assembly Sync")]
+    //[MenuItem("AssemblyBuilder Example/Build Assembly Sync")]
     public static void BuildAssemblySync()
     {
         var files = GetFiles();

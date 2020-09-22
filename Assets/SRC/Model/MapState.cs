@@ -43,23 +43,6 @@ namespace SRC.Model
 }
 
 [AttributeUsage(AttributeTargets.Assembly)]
-public class AssemblySourcesPathAttribute : Attribute
-{
-    public readonly string path;
-    public readonly string sourceFilePath;
-
-    public AssemblySourcesPathAttribute(
-        string path,
-        [System.Runtime.CompilerServices.CallerFilePath]
-        string sourceFilePath = ""
-    )
-    {
-        this.path = path;
-        this.sourceFilePath = sourceFilePath;
-    }
-}
-
-[AttributeUsage(AttributeTargets.Assembly)]
 public class AssemblyCodeGenSourceAttribute : Attribute
 {
     public readonly string path;
