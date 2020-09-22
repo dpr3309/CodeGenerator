@@ -17,46 +17,51 @@ public class Helper
     // }
 
     //[MenuItem("AssemblyBuilder Example/Build Assembly Sync")]
-    public static void BuildAssemblySync()
+    public static void BuildAssemblySync(string path)
     {
-        var files = GetFiles();
+        var files = GetFiles(path);
         BuildAssembly(true, files:files);
     }
 
-    private static FileInfo[] GetFiles()
+    private static FileInfo[] GetFiles(string path)
     {
-
-        var files = Directory.GetFiles("Temp/MVU","*.*", SearchOption.AllDirectories);
-
+        var files = Directory.GetFiles(path,"*.*", SearchOption.AllDirectories);
         return files.Select(i => new FileInfo(i)).ToArray();
-        //return new[] {new FileInfo($"Temp/MVU/SomeClass.cs")};
     }
 
-    public static Assembly BuildAssemblyFromSources(string sourcesPath, int index)
+    public static Assembly BuildAssemblyFromSources(string sourcesPath, string outPutAssemblyPath, string assemblyProjPath)
     {
         var files = Directory.GetFiles(sourcesPath,"*.cs", SearchOption.AllDirectories);
         // foreach (var file in files)
         // {
         //     Debug.Log(file);
         // }
-        return BuildAssembly(true, $"Temp/MyAssembly/HeaderAssembly_{index}.dll",$"Temp/HeaderAssembly_{index}.dll", files.Select(i => new FileInfo(i)).ToArray());
+        
+        return BuildAssembly(true, outPutAssemblyPath,assemblyProjPath, files.Select(i => new FileInfo(i)).ToArray());
     }
 
-    static Assembly BuildAssembly(bool wait, string assPath = "" , string assPP = "", params FileInfo[] files)
+    private static string _defaultOutputAssemblyPath = $"Temp{Path.DirectorySeparatorChar}MyAssembly{Path.DirectorySeparatorChar}MyAssembly.dll";
+    private static string _defaultAssemblyProjectPath = $"Assets{Path.DirectorySeparatorChar}SRC{Path.DirectorySeparatorChar}MyAssembly.dll";
+    public static string DefaultTempPath = $"Temp{Path.DirectorySeparatorChar}MyAssembly";
+
+    static Assembly BuildAssembly(bool wait, string outputAssemblyPath = "" , string assemblyProjPath = "", params FileInfo[] files)
     {
         //Debug.Log("BA: " + files.Length);
-        //var scripts = new[] { "Temp/MyAssembly/MyScript1.cs", "Temp/MyAssembly/MyScript2.cs" };
+        
         List<string> scripts = new List<string>();
-        var outputAssembly = (!string.IsNullOrEmpty(assPath))?assPath:"Temp/MyAssembly/MyAssembly.dll";
-        var assemblyProjectPath = !string.IsNullOrEmpty(assPP)?assPP:"Assets/SRC/MyAssembly.dll";
+        var outputAssembly = (!string.IsNullOrEmpty(outputAssemblyPath))
+            ? outputAssemblyPath
+            : _defaultOutputAssemblyPath;
+        var assemblyProjectPath =
+            !string.IsNullOrEmpty(assemblyProjPath) ? assemblyProjPath : _defaultAssemblyProjectPath;
 
-        Directory.CreateDirectory("Temp/MyAssembly");
+        Directory.CreateDirectory(DefaultTempPath);
 
         // Create scripts
         foreach (var fileInfo in files)
         {
             var scriptName = Path.GetFileNameWithoutExtension(fileInfo.Name);
-            string path = $"Temp/MyAssembly/{scriptName}.cs";
+            string path = $"{DefaultTempPath}{Path.DirectorySeparatorChar}{scriptName}.cs";
             var content = File.ReadAllText(fileInfo.FullName);
             File.WriteAllText(path, content);
             scripts.Add(path);
@@ -100,7 +105,6 @@ public class Helper
         if(!assemblyBuilder.Build())
         {
             throw new Exception($"Failed to start build of assembly {assemblyBuilder.assemblyPath}!");
-            
         }
 
         if(wait)

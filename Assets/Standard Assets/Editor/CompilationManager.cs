@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Policy;
 using Lext.Generators;
 using UnityEditor;
-using UnityEditor.Callbacks;
 using UnityEditor.Compilation;
 using UnityEngine;
 using Assembly = System.Reflection.Assembly;
@@ -15,14 +13,14 @@ public class CompilationManager
 {
     static CompilationManager()
     {
-        Debug.Log("FIRSTPASS");
+        //Debug.Log("FIRSTPASS");
         // EditorApplication.update += Update;
-        CompilationPipeline.assemblyCompilationFinished += ProcessBatchModeCompileFinish;
+        //CompilationPipeline.assemblyCompilationFinished += ProcessBatchModeCompileFinish;
     }
 
     private static void ProcessBatchModeCompileFinish(string s, CompilerMessage[] compilerMessages)
     {
-        // Debug.Log($" ProcessBatchModeCompileFinish: {s}");
+         Debug.Log($" ProcessBatchModeCompileFinish: {s}");
         //
         // foreach (var message in compilerMessages)
         // {
@@ -32,8 +30,12 @@ public class CompilationManager
         //
         //
         //
-        // // if(s.Trim().ToUpper().Contains("firstpass".Trim().ToUpper()))
-        //     OnScriptsReloaded(s);
+        // if (s.Trim().ToUpper().Contains("HeaderAssembly".Trim().ToUpper()))
+        // {
+        //     Debug.Log("START GENERATION!!!!!!!!!!!!!!!!!");
+        //     //GenerateOne(s);
+        // }
+            
     }
 
     // [DidReloadScripts]
@@ -68,35 +70,19 @@ public class CompilationManager
     //      // dlls = dlls.Concat(assemblyes.Select(x => x.Location)).Distinct().ToList();
     //      // Regenerate();
     // }
-
-    public static List<string> dlls = new List<string>();
-
-    [UnityEditor.MenuItem("GENERATOR/Regenerate")]
+    
+    [MenuItem("GENERATOR/Regenerate")]
     public static void Regenerate()
     {
-        //foreach (var dll in dlls)
-        string dll = $"Library/ScriptAssemblies/HeaderAssembly.dll";
-            GenerateOne(dll);
+        var headerAss = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(i =>
+            i.GetCustomAttributes(typeof(AssemblyCodeGenSourceAttribute), true).Length > 0).Location;
+        
+            GenerateOne(headerAss);
     }
 
     private static bool inProcess;
 
-    
-    /// <summary>
-    /// нужен как воздух!
-    /// если его не приписывать к имени каждой новой генерируемой промежуточной сборке - настанет беда!
-    /// каждый раз будет загружаться последня успешно скомпилированная промежуточная сборка, и актуальные изменения из сборки хедеров не подтянуться!
-    /// </summary>
-    private static int index
-    {
-        get => PlayerPrefs.GetInt("LastAssemblyIndex", 0);
-        set
-        {
-            PlayerPrefs.SetInt("LastAssemblyIndex", value);
-            PlayerPrefs.Save();
-        }
-    }
-    
+    private const string _headerAssemblyPrefix = "HeaderAssembly_";
     public static void GenerateOne(string path)
     {
         if(inProcess)
@@ -132,12 +118,19 @@ public class CompilationManager
 
         // тут ОБЯЗАТЕЛЬНО должен инкрементироваться индекс с каждой сборкой!
         // иначе при генерации подтянется последняя удачно скомпилированная сборка, без актуальных иземенний
-        index += 1;
+        //index += 1;
+        int index = UnityEngine.Random.Range(0, Int32.MaxValue);
         
         //собираю сборку из сорцов
         //тут ОБЯЗАТЕЛЬНО передавать индекс, который инкрементируется с каждой сборкой!
         // иначе подтянется последняя удачно скомпилированная сборка, без актуальных иземенний
-        Helper.BuildAssemblyFromSources(sourcesDir, index);
+
+        // поидеи можно оставить так, т.к. это папки, в которые удет генерироваться промежуточный код.
+        string outPutAssemblyPath = $"Temp{Path.DirectorySeparatorChar}MyAssembly{Path.DirectorySeparatorChar}{_headerAssemblyPrefix}{index}.dll";
+        string assemblyProjPath = $"Temp{Path.DirectorySeparatorChar}{_headerAssemblyPrefix}{index}.dll";
+        
+
+        Helper.BuildAssemblyFromSources(sourcesDir, outPutAssemblyPath, assemblyProjPath);
         
         AppDomain.Unload(domain);
         Debug.Log("[CompilationManager.GenerateOne] -=End generation=-");
@@ -145,11 +138,11 @@ public class CompilationManager
         inProcess = false;
         
         // второй этап генерации
-        RegenerateCompleteDll();
+        RegenerateCompleteDll(_headerAssemblyPrefix,index);
     }
     
     //[UnityEditor.MenuItem("GENERATOR/RegenerateCompleteDll")]
-    private static void RegenerateCompleteDll()
+    private static void RegenerateCompleteDll(string tempAssemblyPrefix, long index)
     {
         if(inProcess)
             return;
@@ -173,7 +166,7 @@ public class CompilationManager
         
         // тут ОБЯЗАТЕЛЬНО передавать индекс!
         // иначе подтянется последняя удачно скомпилированная сборка, без актуальных иземенний
-        var targetSourcesAssembly_bytes = File.ReadAllBytes($"Temp/MyAssembly/HeaderAssembly_{index}.dll");
+        var targetSourcesAssembly_bytes = File.ReadAllBytes($"{Helper.DefaultTempPath}{Path.DirectorySeparatorChar}{tempAssemblyPrefix}{index}.dll");
         var fps_bytes = File.ReadAllBytes(fps.Location);
         var headerAss_bytes = File.ReadAllBytes(headerAss.Location);
         var ucm_bytes = File.ReadAllBytes(ucm.Location);
@@ -193,10 +186,11 @@ public class CompilationManager
         {
             string specialDirPath = unwrapLextGener.GenerateSpecialDirPath(tempAssembly);
 
+            Debug.LogWarning($"----------------{specialDirPath}--------------");
             unwrapLextGener.TryGenerate(tempAssembly, $"{specialDirPath}");
             
             AppDomain.Unload(domain);
-            Helper.BuildAssemblySync();
+            Helper.BuildAssemblySync(specialDirPath);
         }
         catch (Exception e)
         {
