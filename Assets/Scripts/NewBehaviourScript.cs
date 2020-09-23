@@ -51,6 +51,7 @@ public class NewBehaviourScript : MonoBehaviour
           var m = Model.notStarted();
           var m2 = MVUUpd(Msg.startInit(), m);
 
+
           var m3 = MVUUpd(Msg.loadedLocalSave(new MapState(1000, null, null)), m);
        }
     

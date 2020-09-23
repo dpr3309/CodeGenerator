@@ -27,6 +27,7 @@ namespace HomeIsland
         void StartInit();
         
         
+        
         void LoadedLocalSave(MapState localSave);
         
         void CompletedMinigame(MinigameType game);
