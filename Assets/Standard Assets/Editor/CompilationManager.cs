@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Policy;
@@ -13,30 +14,77 @@ public class CompilationManager
 {
     static CompilationManager()
     {
-        //Debug.Log("FIRSTPASS");
+        Debug.Log("FIRSTPASS");
         // EditorApplication.update += Update;
-        //CompilationPipeline.assemblyCompilationFinished += ProcessBatchModeCompileFinish;
+        CompilationPipeline.assemblyCompilationFinished += ProcessBatchModeCompileFinish;
+        CompilationPipeline.compilationFinished += OnCompilationFinished;
+    }
+
+    private static void OnCompilationFinished(object obj)
+    {
+        var filesFromAssembly = Helper.GetFiles( /*assCheck.Location*/"Assets/SRC/Model/Headers/", "*.cs");
+
+        IEnumerable<(string name, string contents)> filesData =
+            filesFromAssembly.Select(i => (i.FullName, File.ReadAllText(i.FullName)));
+
+        var actualHash = HashFiles(filesData);
+        if (oldHash != actualHash)
+        {
+            Debug.LogWarning("Нужно запустить генерацию!!!!!");
+            oldHash = actualHash;
+            
+            var currentDomain = AppDomain.CurrentDomain;
+
+            var ass = currentDomain.GetAssemblies();
+            
+            var headerAss = ass.FirstOrDefault(i =>
+                i.GetCustomAttributes(typeof(AssemblyCodeGenSourceAttribute), true).Length > 0);
+            
+            GenerateOne(headerAss.Location);
+        }
     }
 
     private static void ProcessBatchModeCompileFinish(string s, CompilerMessage[] compilerMessages)
     {
-         Debug.Log($" ProcessBatchModeCompileFinish: {s}");
-        //
-        // foreach (var message in compilerMessages)
-        // {
-        //     Debug.Log(message.message);
-        // }
-        //
-        //
-        //
+        // Debug.Log($" ProcessBatchModeCompileFinish: {s}");
         //
         // if (s.Trim().ToUpper().Contains("HeaderAssembly".Trim().ToUpper()))
         // {
         //     Debug.Log("START GENERATION!!!!!!!!!!!!!!!!!");
-        //     //GenerateOne(s);
+        //     var assCheck = Assembly.LoadFile(s);
+        //
+        //     //D:\Work\DELL\first_path_test\Assets\SRC\Model\Headers
+        //     var filesFromAssembly = Helper.GetFiles( /*assCheck.Location*/"Assets/SRC/Model/Headers/", "*.cs");
+        //
+        //     IEnumerable<(string name, string contents)> filesData =
+        //         filesFromAssembly.Select(i => (i.FullName, File.ReadAllText(i.FullName)));
+        //
+        //     var actualHash = HashFiles(filesData);
+        //     if (oldHash != actualHash)
+        //     {
+        //         Debug.LogWarning("Нужно запустить генерацию!!!!!");
+        //         oldHash = actualHash;
+        //         headerPath = s;
+        //         //GenerateOne(s);
+        //     }
         // }
-            
     }
+
+
+    private static string headerPath;
+
+private static string oldHash
+    {
+        get => PlayerPrefs.GetString("HeadersHash", String.Empty);
+        set
+        {
+            PlayerPrefs.SetString("HeadersHash", value);
+            PlayerPrefs.Save();
+        }
+    }
+
+private static string HashFiles(IEnumerable<(string name, string contents)> files) =>
+        HashCalculator.HashFiles(files);
 
     // [DidReloadScripts]
     // private static void Did() => OnScriptsReloaded();
@@ -83,6 +131,11 @@ public class CompilationManager
     private static bool inProcess;
 
     private const string _headerAssemblyPrefix = "HeaderAssembly_";
+    
+    static string outPutAssemblyPath(string filename) =>
+        $"Temp{Path.DirectorySeparatorChar}MyAssembly{Path.DirectorySeparatorChar}{filename}.dll";
+    
+    static string assemblyProjPath (string filename)=> $"Temp{Path.DirectorySeparatorChar}{filename}.dll";
     public static void GenerateOne(string path)
     {
         if(inProcess)
@@ -99,7 +152,7 @@ public class CompilationManager
 
         var assCheck = Assembly.LoadFile(path);
         var attrCheck = assCheck.GetCustomAttributes(typeof(AssemblyCodeGenSourceAttribute), false)
-            .Cast<AssemblyCodeGenSourceAttribute>().FirstOrDefault();  
+            .Cast<AssemblyCodeGenSourceAttribute>().FirstOrDefault();
 
         if (attrCheck == null)
             return;
@@ -126,11 +179,11 @@ public class CompilationManager
         // иначе подтянется последняя удачно скомпилированная сборка, без актуальных иземенний
 
         // поидеи можно оставить так, т.к. это папки, в которые удет генерироваться промежуточный код.
-        string outPutAssemblyPath = $"Temp{Path.DirectorySeparatorChar}MyAssembly{Path.DirectorySeparatorChar}{_headerAssemblyPrefix}{index}.dll";
-        string assemblyProjPath = $"Temp{Path.DirectorySeparatorChar}{_headerAssemblyPrefix}{index}.dll";
+        string _outPutAssemblyPath = outPutAssemblyPath($"{_headerAssemblyPrefix}{index}");
+        string _assemblyProjPath = assemblyProjPath($"{_headerAssemblyPrefix}{index}");//$"Temp{Path.DirectorySeparatorChar}{_headerAssemblyPrefix}{index}.dll";
         
 
-        Helper.BuildAssemblyFromSources(sourcesDir, outPutAssemblyPath, assemblyProjPath);
+        Helper.BuildAssemblyFromSources(sourcesDir, _outPutAssemblyPath, _assemblyProjPath);
         
         AppDomain.Unload(domain);
         Debug.Log("[CompilationManager.GenerateOne] -=End generation=-");

@@ -9,35 +9,23 @@ using Assembly = System.Reflection.Assembly;
 
 public class Helper 
 {
-    // [MenuItem("AssemblyBuilder Example/Build Assembly Async")]
-    // public static void BuildAssemblyAsync()
-    // {
-    //     var files = GetFiles();
-    //     BuildAssembly(false, files:files);
-    // }
-
-    //[MenuItem("AssemblyBuilder Example/Build Assembly Sync")]
     public static void BuildAssemblySync(string path)
     {
         var files = GetFiles(path);
         BuildAssembly(true, files:files);
     }
 
-    private static FileInfo[] GetFiles(string path)
+    public static FileInfo[] GetFiles(string path,  string searchPattern = "*.*")
     {
-        var files = Directory.GetFiles(path,"*.*", SearchOption.AllDirectories);
+        var files = Directory.GetFiles(path, searchPattern, SearchOption.AllDirectories);
         return files.Select(i => new FileInfo(i)).ToArray();
     }
 
     public static Assembly BuildAssemblyFromSources(string sourcesPath, string outPutAssemblyPath, string assemblyProjPath)
     {
-        var files = Directory.GetFiles(sourcesPath,"*.cs", SearchOption.AllDirectories);
-        // foreach (var file in files)
-        // {
-        //     Debug.Log(file);
-        // }
+        var filesInfo = GetFiles(sourcesPath, "*.cs");
         
-        return BuildAssembly(true, outPutAssemblyPath,assemblyProjPath, files.Select(i => new FileInfo(i)).ToArray());
+        return BuildAssembly(true, outPutAssemblyPath,assemblyProjPath, filesInfo);
     }
 
     private static string _defaultOutputAssemblyPath = $"Temp{Path.DirectorySeparatorChar}MyAssembly{Path.DirectorySeparatorChar}MyAssembly.dll";
