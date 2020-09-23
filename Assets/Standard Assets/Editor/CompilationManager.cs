@@ -14,15 +14,14 @@ public class CompilationManager
 {
     static CompilationManager()
     {
-        Debug.Log("FIRSTPASS");
-        // EditorApplication.update += Update;
-        CompilationPipeline.assemblyCompilationFinished += ProcessBatchModeCompileFinish;
         CompilationPipeline.compilationFinished += OnCompilationFinished;
     }
 
     private static void OnCompilationFinished(object obj)
     {
-        var filesFromAssembly = Helper.GetFiles( /*assCheck.Location*/"Assets/SRC/Model/Headers/", "*.cs");
+        var assemblySourcesPath = GetHeaderAssemblySourcesPath();
+
+        var filesFromAssembly = Helper.GetFiles(assemblySourcesPath, "*.cs");
 
         IEnumerable<(string name, string contents)> filesData =
             filesFromAssembly.Select(i => (i.FullName, File.ReadAllText(i.FullName)));
@@ -44,36 +43,7 @@ public class CompilationManager
         }
     }
 
-    private static void ProcessBatchModeCompileFinish(string s, CompilerMessage[] compilerMessages)
-    {
-        // Debug.Log($" ProcessBatchModeCompileFinish: {s}");
-        //
-        // if (s.Trim().ToUpper().Contains("HeaderAssembly".Trim().ToUpper()))
-        // {
-        //     Debug.Log("START GENERATION!!!!!!!!!!!!!!!!!");
-        //     var assCheck = Assembly.LoadFile(s);
-        //
-        //     //D:\Work\DELL\first_path_test\Assets\SRC\Model\Headers
-        //     var filesFromAssembly = Helper.GetFiles( /*assCheck.Location*/"Assets/SRC/Model/Headers/", "*.cs");
-        //
-        //     IEnumerable<(string name, string contents)> filesData =
-        //         filesFromAssembly.Select(i => (i.FullName, File.ReadAllText(i.FullName)));
-        //
-        //     var actualHash = HashFiles(filesData);
-        //     if (oldHash != actualHash)
-        //     {
-        //         Debug.LogWarning("Нужно запустить генерацию!!!!!");
-        //         oldHash = actualHash;
-        //         headerPath = s;
-        //         //GenerateOne(s);
-        //     }
-        // }
-    }
-
-
-    private static string headerPath;
-
-private static string oldHash
+    private static string oldHash
     {
         get => PlayerPrefs.GetString("HeadersHash", String.Empty);
         set
@@ -86,39 +56,6 @@ private static string oldHash
 private static string HashFiles(IEnumerable<(string name, string contents)> files) =>
         HashCalculator.HashFiles(files);
 
-    // [DidReloadScripts]
-    // private static void Did() => OnScriptsReloaded();
-    //
-    // private static void OnScriptsReloaded(string s = "")
-    // {
-    //     var assemblyes = AppDomain.CurrentDomain.GetAssemblies()
-    //         .Where(x => x.GetCustomAttributes(typeof(AssemblyCodeGenSourceAttribute), false).Any());
-    //
-    //     if (!assemblyes.Any())
-    //         return;
-    //
-    //     // Debug.Log($"1: COMPILATION FINISHED: {s}");
-    //     // // do something
-    //     // Debug.Log("FIRSTPASS-RECOMPILE");
-    //     // Debug.Log("Запустить кодо генерацию!");
-    //
-    //     // var modelAssembly =
-    //     //     assemblyes.FirstOrDefault(i => i.FullName.Trim().ToUpper().Contains("model".Trim().ToUpper()));
-    //     
-    //     // if(modelAssembly == null)
-    //     //     throw new Exception("[CompilationManager.OnScriptsReloaded] modelAssembly == null!!");
-    //
-    //     // foreach (var modelAssembly in assemblyes)
-    //     // {
-    //     //     Debug.Log(modelAssembly.FullName);
-    //     //     Debug.Log(modelAssembly.Location);
-    //     //     GenerateOne(modelAssembly.Location);
-    //     // }
-    //
-    //      // dlls = dlls.Concat(assemblyes.Select(x => x.Location)).Distinct().ToList();
-    //      // Regenerate();
-    // }
-    
     [MenuItem("GENERATOR/Regenerate")]
     public static void Regenerate()
     {
@@ -136,6 +73,27 @@ private static string HashFiles(IEnumerable<(string name, string contents)> file
         $"Temp{Path.DirectorySeparatorChar}MyAssembly{Path.DirectorySeparatorChar}{filename}.dll";
     
     static string assemblyProjPath (string filename)=> $"Temp{Path.DirectorySeparatorChar}{filename}.dll";
+
+    /// <summary>
+    /// возвращает путь к исходникам файлов, собержащихся в сборке HeaderAssembly.dll
+    /// </summary>
+    /// <returns>директорию, в которй лежит файт помеченный атрибутом AssemblyCodeGenSourceAttribute - это должен быть файл AssemblyInfo, в корне директории хедеров</returns>
+    private static string GetHeaderAssemblySourcesPath()
+    {
+        var currentDomain = AppDomain.CurrentDomain;
+
+        var ass = currentDomain.GetAssemblies();
+
+        var headerAss = ass.FirstOrDefault(i =>
+            i.GetCustomAttributes(typeof(AssemblyCodeGenSourceAttribute), true).Length > 0);
+        var p =  headerAss.GetCustomAttributes(typeof(AssemblyCodeGenSourceAttribute), false)
+            .Cast<AssemblyCodeGenSourceAttribute>().FirstOrDefault().sourceFilePath;
+
+        var directory = Path.GetDirectoryName(p);
+
+        return directory;
+    }
+    
     public static void GenerateOne(string path)
     {
         if(inProcess)
@@ -194,7 +152,6 @@ private static string HashFiles(IEnumerable<(string name, string contents)> file
         RegenerateCompleteDll(_headerAssemblyPrefix,index);
     }
     
-    //[UnityEditor.MenuItem("GENERATOR/RegenerateCompleteDll")]
     private static void RegenerateCompleteDll(string tempAssemblyPrefix, long index)
     {
         if(inProcess)
